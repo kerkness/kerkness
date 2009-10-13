@@ -13,6 +13,7 @@ class Controller_Service_Validate extends Controller_Service
 	public function action_validate()
 	{
 		$response = array('error'=>FALSE);
+		$arr = array();
 		
 		try 
 		{
@@ -27,7 +28,7 @@ class Controller_Service_Validate extends Controller_Service
 		{
 			$response = array(
 				'error' => TRUE,
-				'message' => __("Invalid $model"),
+				'message' => __("Invalid $this->model"),
 				'errors' => $arr,
 			);
 		}
