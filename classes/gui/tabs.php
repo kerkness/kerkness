@@ -9,7 +9,8 @@
  * @copyright  (c) 2008-2009 Kohana Team
  * @license    http://kohanaphp.com/license.html
  */
-class Gui_Tabs {
+class Gui_Tabs extends Gui_Control
+{
 	
 	public $attributes = array();
 
@@ -20,9 +21,9 @@ class Gui_Tabs {
 	 * @param   array   array of values
 	 * @return  Tabs
 	 */
-	public static function factory( $view = NULL, $data = array(), $attributes = array() )
+	public static function factory( $data = array(), $attributes = array() )
 	{
-		return new Gui_Tabs($view, $data, $attributes);
+		return new Gui_Tabs($data, $attributes);
 	}
 
 
@@ -30,8 +31,8 @@ class Gui_Tabs {
 	protected $_data = array();
 	protected $_data_attributes = array();
 	protected $_attributes = array();
-	protected $_view = '';
-
+	protected $_panels = array();
+	
 	/**
 	 * Sets the initial Tabs filename and local data.
 	 *
@@ -39,43 +40,14 @@ class Gui_Tabs {
 	 * @param   array   array of values
 	 * @return  void
 	 */
-	public function __construct($view = NULL, $data = array(), $attributes = array())
+	public function __construct( $data=array(), $attributes = array() )
 	{		
-		if ($view !== NULL)
-		{
-			$this->_view = $view;
-		}
-
 		if ( $data !== NULL)
 		{
 			$this->_data = array_merge( $this->_data, $data );
 		}
-		
-		if( $attributes != NULL )
-		{
-			$this->_attributes = $attrbutes;
-		}
-	}
-
-	/**
-	 * Magic method, returns the output of render(). If any exceptions are
-	 * thrown, the exception output will be returned instead.
-	 *
-	 * @return  string
-	 */
-	public function __toString()
-	{
-		try
-		{
-			return $this->render();
-		}
-		catch (Exception $e)
-		{
-			// Display the exception message
-			Kohana::exception_handler($e);
-
-			return '';
-		}
+				
+		$this->_attributes = $attributes;
 	}
 
 	/**
@@ -83,60 +55,25 @@ class Gui_Tabs {
 	 * @param   mixed    value
 	 * @return  Tabs
 	 */
-	public function set($key, $value = NULL, array $attributes = NULL )
+	public function set($key, $value = NULL, $panel='', array $attributes = NULL )
 	{
-		if (is_array($key))
-		{
-			foreach ($key as $name => $value)
-			{
-				$this->_data[$name] = $value;
-			}
-		}
-		else
-		{
-			$this->_data[$key] = $value;
-			
-			if ( $attributes )
-			{
-				$this->_data_attributes[$key] = $attributes;
-			}
-		}
+		$this->_data[$key] = $value;
 
+		$this->_panels[$key] = $panel;
+		
+		if ( $attributes )
+		{
+			$this->_data_attributes[$key] = $attributes;
+		}
 		return $this;
 	}
 
 	/**
-	 * Assigns a value by reference. The benefit of binding is that values can
-	 * be altered without re-setting them. It is also possible to bind variables
-	 * before they have values. Assigned values will be available as a
-	 * variable within the Tabs file:
-	 *
-	 *     // This reference can be accessed as $ref within the Tabs
-	 *     $Tabs->bind('ref', $bar);
-	 *
-	 * @param   string   variable name
-	 * @param   mixed    referenced variable
-	 * @return  Tabs
-	 */
-	public function bind($key, & $value)
-	{
-		$this->_data[$key] =& $value;
-
-		return $this;
-	}
-
-	/**
-	 * Renders the Tabs object to a string. Global and local data are merged
-	 * and extracted to create local variables within the Tabs file.
-	 *
-	 * Note: Global variables with the same key name as local variables will be
-	 * overwritten by the local variable.
-	 *
-	 * @throws   Tabs_Exception
-	 * @param    Tabs filename
+	 * Renders the Tabs object to a string. 
+	 * 
 	 * @return   string
 	 */
-	public function render($file = NULL)
+	public function render()
 	{
 		$items = array();
 		
@@ -151,17 +88,26 @@ class Gui_Tabs {
 				$option = array();
 			}
 			
+			$key = str_replace('#','',$url);
+			
+			$option['gui_tab'] = true;
+			$option['gui_key'] = $key;
+
 			// Sanitize the option title
 			$title = htmlspecialchars($label, ENT_NOQUOTES, Kohana::$charset, FALSE);
 
 			// Change the option to the HTML string
 			$items[$url] = '<li'.HTML::attributes($option).'>'.HTML::anchor($url, $title).'</li>';
+			$response[] = Form::hidden($key.'_tabs_panel', $this->_panels[$url], array('gui_tabs_panel'=>$key));
 		}
 		
 		// Compile the options into a single string
 		$options = "\n".implode("\n", $items)."\n";
 		
-		return '<ul'.HTML::attributes($this->attributes).'>'.$options.'</ul>';
+		// Add list to response
+		$response[] = '<ul'.HTML::attributes($this->_attributes).'>'.$options.'</ul>';
+		
+		return "\n".implode("\n", $response)."\n";
 		
 	}
 
